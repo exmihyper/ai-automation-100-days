@@ -1,0 +1,80 @@
+{
+  "name": "Day 1 — Первая шутка на Python",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c155bd14-1bb7-4e15-b129-deee9a1a506a",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://api.chucknorris.io/jokes/random",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "f1551330-af22-444d-b457-68b7d2aeb097",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "items = _items\n\nresponse = items[0][\"json\"]\n\nprint(\"=== ШУТКА ДНЯ ===\")\nprint(response[\"value\"])\n\nreturn [{\n    \"json\": {\n        \"joke\": response[\"value\"]\n    }\n}]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "3405a6ad-7443-4bd5-a62c-130a3271067f",
+      "name": "Code in Python"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in Python",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "fc959f71-1bd1-447a-bb14-8adfb47b2806",
+  "meta": {
+    "instanceId": "d8537f3aae78b9a389a101c94c919fca4b00dd8d40ff4db490766f255e55761d"
+  },
+  "id": "4GaG9I9MZo3UWMKZ",
+  "tags": []
+}
