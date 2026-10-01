@@ -1,0 +1,439 @@
+{
+  "name": "День 13 — Обработка ошибок",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -480,
+        0
+      ],
+      "id": "335d3782-e539-49cd-a197-126c382fdadb",
+      "name": "Telegram Trigger",
+      "webhookId": "ef27ace1-2e41-418c-9034-43fba3fcb3f8",
+      "credentials": {
+        "telegramApi": {
+          "id": "Rgi97VSfXYPghdOs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "=5642054503",
+        "text": "={{ $json.value }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        256,
+        -96
+      ],
+      "id": "1a36f941-2bd4-46e3-8665-bf8cb8cec0c9",
+      "name": "Send a text message",
+      "webhookId": "e8b5d524-3a56-46e0-af28-1a8d329258f8",
+      "credentials": {
+        "telegramApi": {
+          "id": "Rgi97VSfXYPghdOs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "32d5c487-d238-40b1-8aac-c878a733b8d3",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "/joke",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -272,
+        0
+      ],
+      "id": "d1bf33ea-ede7-4ff1-a6d8-0cd90680768d",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "url": "https://api.chucknorris.io/jokes/random",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        -96
+      ],
+      "id": "114040ca-c1cc-46b1-8673-b007bbe61555",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "chatId": "5642054503",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        112
+      ],
+      "id": "ac44125c-be6b-4cc9-9580-bc272e5acbae",
+      "name": "Send a text message1",
+      "webhookId": "5bf8483e-11c9-4184-a60e-3df320678eb3",
+      "credentials": {
+        "telegramApi": {
+          "id": "Rgi97VSfXYPghdOs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "Ты — полезный AI-ассистент, который отвечает на вопросы по SQL и Python.\n\nУ тебя есть два инструмента:\n- SQL Tool: ищет в базе из 40 вопросов по SQL\n- Python Tool: ищет в базе из 40 вопросов по Python\n\nКогда пользователь задаёт вопрос, реши, какой инструмент использовать:\n- Если вопрос про SQL (JOIN, SELECT, индексы, транзакции) — используй SQL Tool\n- Если вопрос про Python (списки, словари, функции, классы) — используй Python Tool\n- Если вопрос про оба — используй оба инструмента\n\nВсегда отвечай на основе найденной информации. Если ответа нет — честно скажи об этом.\nОтвечай на русском языке, дружелюбно."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        0,
+        128
+      ],
+      "id": "782a23b4-4398-4f2d-941c-b2c223f77751",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        288
+      ],
+      "id": "5dda1130-8440-4010-af7f-85d1702207e3",
+      "name": "Groq Chat Model",
+      "notesInFlow": false,
+      "credentials": {
+        "groqApi": {
+          "id": "5K11JJnWCjWoNscY",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search SQL interview questions. Use this tool when the user asks about SQL, databases, JOINs, transactions, or any SQL-related topic.",
+        "memoryKey": {
+          "__rl": true,
+          "value": "vector_store_key",
+          "mode": "list",
+          "cachedResultName": "vector_store_key"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        416,
+        336
+      ],
+      "id": "3a00967d-78f4-40d6-a007-6188c9ac10c4",
+      "name": "Simple Vector Store1"
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        496,
+        528
+      ],
+      "id": "32b0702b-8416-45b8-b863-309951359de1",
+      "name": "Embeddings Ollama1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "wOOPqi4upnDmGu6Y",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search Python interview questions. Use this tool when the user asks about Python, lists, dictionaries, functions, classes, or any Python-related topic.",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        144,
+        368
+      ],
+      "id": "90a57b4f-761a-4c73-92cb-92744dfb11d8",
+      "name": "Simple Vector Store2"
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        240,
+        576
+      ],
+      "id": "86db6d12-9770-4663-9399-49278d3c1412",
+      "name": "Embeddings Ollama2",
+      "credentials": {
+        "ollamaApi": {
+          "id": "wOOPqi4upnDmGu6Y",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.message.chat.id }}",
+        "contextWindowLength": 3
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.4,
+      "position": [
+        16,
+        336
+      ],
+      "id": "cf6f389b-5310-4279-9eb3-e63b5954c23d",
+      "name": "Postgres Chat Memory",
+      "retryOnFail": true,
+      "credentials": {
+        "postgres": {
+          "id": "m6w8b1nAKMVin3tL",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -944,
+        224
+      ],
+      "id": "04e56475-b097-4142-b642-da5f18f5c156",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "5642054503",
+        "text": "=⚠️ Ошибка в workflow: {{ $json.workflow.name }} Узел: {{ $json.execution.lastNodeExecuted }} Ошибка: {{ $json.execution.error.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -736,
+        224
+      ],
+      "id": "a13412a9-b8f5-4bb2-b424-977e1d23d84d",
+      "name": "Send a text message2",
+      "webhookId": "9db91181-0d94-4826-90a1-b51d903b75ba",
+      "credentials": {
+        "telegramApi": {
+          "id": "Rgi97VSfXYPghdOs",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store2": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "MwXO4XlEgkDYKOwv",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "f0a1a8cc-3817-45a2-8edb-666a68e48a6e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d66ae538ff21d02df59cae6a85dcdfefbeb511d5f9c6ecd248aa81cf92f1cfb5"
+  },
+  "id": "MwXO4XlEgkDYKOwv",
+  "tags": []
+}
