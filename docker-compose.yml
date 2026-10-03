@@ -14,8 +14,15 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-
-      
+  searxng:
+    image: searxng/searxng:latest
+    container_name: n8n-searxng
+    restart: unless-stopped
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8080/
+      - SEARXNG_SECRET=change-this-to-random-string-2026
+    volumes:
+      - searxng_data:/etc/searxng
   n8n:
     image: n8nio/n8n:2.22.4
     container_name: n8n-main
@@ -31,8 +38,11 @@ services:
       - WEBHOOK_URL=https://n8n-turbomurzik.46.17.102.81.sslip.io
       - N8N_EDITOR_BASE_URL=https://n8n-turbomurzik.46.17.102.81.sslip.io
       - N8N_SECURE_COOKIE=false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - n8n_data:/home/node/.n8n
+      - /root/n8n-data:/home/node/.n8n-files
 
   n8n-runners:
     image: n8nio/runners:2.22.4
@@ -47,3 +57,4 @@ services:
 volumes:
   n8n_data:
   postgres_data:
+  searxng_data:
