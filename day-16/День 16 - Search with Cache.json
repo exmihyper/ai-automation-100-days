@@ -1,0 +1,262 @@
+{
+  "name": "День 16 - Search with Cache",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "=search:{{ $json.query }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "d5d86033-ca22-47e7-a996-554d567903cd",
+      "name": "Redis",
+      "credentials": {
+        "redis": {
+          "id": "Bg7fwwYoGrtzEq7B",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "950fa7aa-d3a9-4a5e-9362-3b39c2416535",
+              "leftValue": "={{ $json.propertyName }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        384,
+        -16
+      ],
+      "id": "84aad4f4-fa3f-41c0-b538-793e5d4e5382",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "61c5d078-d7f3-4b18-8e64-52c1a796c4eb",
+              "name": "response",
+              "value": "={{ $json.propertyName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        -96
+      ],
+      "id": "f8e3d28b-d51b-4485-aad0-90211d86a746",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": "http://searxng:8080/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $('When Executed by Another Workflow').item.json.query }}"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            },
+            {
+              "name": "count",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        592,
+        80
+      ],
+      "id": "be920cd4-fbd5-4770-90b0-3cd25f138832",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9f528ff2-4d99-4584-b38a-51820666f8bd",
+              "name": "response",
+              "value": "=search:{{ $('When Executed by Another Workflow').item.json.query }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        80
+      ],
+      "id": "cebe6442-ac77-407a-81f8-fb37e8faf5b8",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "=search:{{ $('When Executed by Another Workflow').item.json.query }}",
+        "value": "={{ $json.response }}",
+        "expire": true,
+        "ttl": 3600
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        80
+      ],
+      "id": "4dca8caa-ad88-4f1d-821e-91bbef266816",
+      "name": "Redis1",
+      "credentials": {
+        "redis": {
+          "id": "Bg7fwwYoGrtzEq7B",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "query"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "eeceeda6-2caf-41a3-844c-d437138f90e2",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Redis": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Redis1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Redis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "bd2252b9-a9de-401c-94de-1a09584d25d6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d66ae538ff21d02df59cae6a85dcdfefbeb511d5f9c6ecd248aa81cf92f1cfb5"
+  },
+  "id": "Krl3F4YVFymBo3y3",
+  "tags": []
+}

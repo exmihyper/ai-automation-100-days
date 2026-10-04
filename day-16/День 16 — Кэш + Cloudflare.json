@@ -1,0 +1,486 @@
+{
+  "name": "День 16 — Кэш + Cloudflare",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -608,
+        128
+      ],
+      "id": "612183f3-6e4c-4237-b5a1-d520ae59fb3f",
+      "name": "Telegram Trigger",
+      "webhookId": "ef27ace1-2e41-418c-9034-43fba3fcb3f8",
+      "credentials": {
+        "telegramApi": {
+          "id": "Rgi97VSfXYPghdOs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "=5642054503",
+        "text": "={{ $json.value }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        128,
+        32
+      ],
+      "id": "f9436509-3291-41bb-9a8d-9e3aa2838aae",
+      "name": "Send a text message",
+      "webhookId": "e8b5d524-3a56-46e0-af28-1a8d329258f8",
+      "credentials": {
+        "telegramApi": {
+          "id": "Rgi97VSfXYPghdOs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "32d5c487-d238-40b1-8aac-c878a733b8d3",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "/joke",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -400,
+        128
+      ],
+      "id": "6f6124ea-882f-4933-a030-82b1767abff9",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "url": "https://api.chucknorris.io/jokes/random",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -128,
+        32
+      ],
+      "id": "aee3d5dc-bdbd-4838-afb3-d7bf8801900c",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "chatId": "5642054503",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        240
+      ],
+      "id": "99338fb5-6e56-4682-85b3-e563d69e9f09",
+      "name": "Send a text message1",
+      "webhookId": "5bf8483e-11c9-4184-a60e-3df320678eb3",
+      "credentials": {
+        "telegramApi": {
+          "id": "Rgi97VSfXYPghdOs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "Ты — полезный AI-ассистент, который отвечает на вопросы по SQL и Python.\n\nУ тебя есть два инструмента:\n- SQL Tool: ищет в базе из 40 вопросов по SQL\n- Python Tool: ищет в базе из 40 вопросов по Python\n\nКогда пользователь задаёт вопрос, реши, какой инструмент использовать:\n- Если вопрос про SQL (JOIN, SELECT, индексы, транзакции) — используй SQL Tool\n- Если вопрос про Python (списки, словари, функции, классы) — используй Python Tool\n- Если вопрос про оба — используй оба инструмента\n\nВсегда отвечай на основе найденной информации. Если ответа нет — честно скажи об этом.\nОтвечай на русском языке, дружелюбно.\n\nПравила:\n1. Сначала попробуй SQL Tool или Python Tool\n2. Если нет ответа — Web Search\n3. Если вопрос про новости — сразу Web Search"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -128,
+        256
+      ],
+      "id": "dabf575f-314a-44fb-8a82-6f2679e9e14a",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search SQL interview questions. Use this tool when the user asks about SQL, databases, JOINs, transactions, or any SQL-related topic.",
+        "memoryKey": {
+          "__rl": true,
+          "value": "vector_store_key",
+          "mode": "list",
+          "cachedResultName": "vector_store_key"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        464
+      ],
+      "id": "91166ec3-1f71-4dfe-bff8-8e4e297dde68",
+      "name": "Simple Vector Store1"
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        368,
+        656
+      ],
+      "id": "3df358c9-31e3-494c-923e-f66415b7e571",
+      "name": "Embeddings Ollama1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "wOOPqi4upnDmGu6Y",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search Python interview questions. Use this tool when the user asks about Python, lists, dictionaries, functions, classes, or any Python-related topic.",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        },
+        "topK": 1
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        16,
+        496
+      ],
+      "id": "78e81e5b-66ea-4f3c-a916-a6f983ccc05b",
+      "name": "Simple Vector Store2"
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        112,
+        704
+      ],
+      "id": "b742cfb4-07dc-4fd0-bdd5-79aaf36e1734",
+      "name": "Embeddings Ollama2",
+      "credentials": {
+        "ollamaApi": {
+          "id": "wOOPqi4upnDmGu6Y",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.message.chat.id }}",
+        "contextWindowLength": 2
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.4,
+      "position": [
+        -144,
+        432
+      ],
+      "id": "85ab745a-87f6-4ab4-b228-adcea65ce413",
+      "name": "Postgres Chat Memory",
+      "retryOnFail": true,
+      "credentials": {
+        "postgres": {
+          "id": "m6w8b1nAKMVin3tL",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1072,
+        352
+      ],
+      "id": "e08d6013-a33f-4b8e-9e0b-0f5da011d1da",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "5642054503",
+        "text": "=⚠️ Ошибка в workflow: {{ $json.workflow.name }} Узел: {{ $json.execution.lastNodeExecuted }} Ошибка: {{ $json.execution.error.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -864,
+        352
+      ],
+      "id": "654a26a7-1a52-478d-9cce-d9ee5460e9e7",
+      "name": "Send a text message2",
+      "webhookId": "9db91181-0d94-4826-90a1-b51d903b75ba",
+      "credentials": {
+        "telegramApi": {
+          "id": "Rgi97VSfXYPghdOs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Search the web using SearXNG (with Redis cache). Use when the user asks about topics NOT covered in SQL or Python knowledge bases.",
+        "workflowId": {
+          "__rl": true,
+          "value": "Krl3F4YVFymBo3y3",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/Krl3F4YVFymBo3y3",
+          "cachedResultName": "Search with Cache"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ $fromAI('query', 'Search query', 'string') }}"
+          },
+          "matchingColumns": [
+            "query"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -96,
+        624
+      ],
+      "id": "7f08008b-a151-4654-9cf5-4eecd7ff8d42",
+      "name": "Call 'Search with Cache'"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-cloudflare-ai.cloudflareChatModel",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        384
+      ],
+      "id": "48f81b13-9f00-43e5-ac27-3cf345eaa94c",
+      "name": "Cloudflare Chat Model",
+      "credentials": {
+        "cloudflareWorkersAiApi": {
+          "id": "EVPmxI6IoxuSR4Oa",
+          "name": "Cloudflare Workers AI account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store2": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Search with Cache'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cloudflare Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "545876dc-b0c4-4a54-9eaa-16eb2081770a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d66ae538ff21d02df59cae6a85dcdfefbeb511d5f9c6ecd248aa81cf92f1cfb5"
+  },
+  "id": "ic7KpMpAu80E35t4",
+  "tags": []
+}
