@@ -1,0 +1,729 @@
+{
+  "name": "День 20 — Цитирование источников",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2512,
+        320
+      ],
+      "id": "1d1dfc7c-03b6-4c3e-a525-ebac218e8ee5",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/home/node/.n8n-files/eval_questions.txt",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -2288,
+        320
+      ],
+      "id": "f36dfbc4-8518-4f5b-ad40-0fc664ccc517",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "jsCode": "const questions = [\n  'Что такое JOIN?',\n  'Разница между WHERE и HAVING?',\n  'Что такое транзакция?',\n  'Какие виды JOIN бывают?',\n  'Что такое индекс?',\n  'Что такое list comprehension?',\n  'Разница между списком и кортежем?',\n  'Что такое генератор?',\n  'Что такое декоратор?',\n  'Разница между == и is?'\n];\n\nreturn questions.map(q => ({ json: { question: q } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        320
+      ],
+      "id": "66a0076d-2256-4499-b73a-7c9c1796a6ea",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\n\n// Твой Cloudflare API\nconst CF_ACCOUNT_ID = '0ad5ca22e6b34abbadc2cfcaba6bfef1';\nconst CF_API_TOKEN_PLACEHOLDER;\nconst CF_MODEL = '@cf/qwen/qwen3-30b-a3b-fp8';\nconst CF_URL = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/ai/v1/chat/completions`;\n\nfor (const item of items) {\n  const question = item.json.question;\n\n  try {\n    // 1. Ответ бота\n    const answerResp = await this.helpers.httpRequest({\n      method: 'POST',\n      url: CF_URL,\n      headers: {\n        'Authorization': `Bearer ${CF_API_TOKEN}`,\n        'Content-Type': 'application/json'\n      },\n      body: {\n        model: CF_MODEL,\n        messages: [\n          { role: 'system', content: 'Ты — AI-ассистент по SQL и Python. Отвечай кратко (2-3 предложения).' },\n          { role: 'user', content: question }\n        ]\n      },\n      json: true\n    });\n\n    const answer = answerResp.choices[0].message.content;\n\n    // 2. Оценка судьи\n    const judgeResp = await this.helpers.httpRequest({\n      method: 'POST',\n      url: CF_URL,\n      headers: {\n        'Authorization': `Bearer ${CF_API_TOKEN}`,\n        'Content-Type': 'application/json'\n      },\n      body: {\n        model: CF_MODEL,\n        messages: [\n          { role: 'system', content: 'Ты — строгий судья. Оцени ответ по шкале 1-10. Верни ТОЛЬКО число.' },\n          { role: 'user', content: `Вопрос: ${question}\\n\\nОтвет: ${answer}\\n\\nОценка (1-10):` }\n        ]\n      },\n      json: true\n    });\n\n    const scoreText = judgeResp.choices[0].message.content.trim();\n    const score = parseFloat(scoreText.match(/\\d+/)?.[0] || '0');\n\n    results.push({\n      json: {\n        question: question,\n        answer: answer.slice(0, 150),\n        score: score\n      }\n    });\n\n  } catch (error) {\n    results.push({\n      json: {\n        question: question,\n        answer: 'ОШИБКА',\n        score: 0,\n        error: error.message\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1872,
+        320
+      ],
+      "id": "ce919508-aaa0-4361-9e88-751414036484",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst scores = items\n  .map(i => parseFloat(i.json.score))\n  .filter(s => !isNaN(s) && s > 0);\n\nconst avg = scores.length > 0 \n  ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)\n  : 0;\n\nreturn [{\n  json: {\n    total_questions: items.length,\n    valid_scores: scores.length,\n    average_score: avg,\n    min_score: Math.min(...scores),\n    max_score: Math.max(...scores),\n    results: items.map(i => ({\n      question: i.json.question,\n      score: i.json.score\n    }))\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1664,
+        320
+      ],
+      "id": "26a56ff0-75ce-48bf-a4fe-ee45609ddf11",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -560,
+        80
+      ],
+      "id": "58f5d7b7-b173-4c72-a602-93fd8de6b591",
+      "name": "Telegram Trigger",
+      "webhookId": "ef27ace1-2e41-418c-9034-43fba3fcb3f8",
+      "credentials": {
+        "telegramApi": {
+          "id": "Rgi97VSfXYPghdOs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "=5642054503",
+        "text": "={{ $json.value }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        176,
+        -16
+      ],
+      "id": "e2303abd-6a37-4ea0-a406-c59318cff9c8",
+      "name": "Send a text message",
+      "webhookId": "e8b5d524-3a56-46e0-af28-1a8d329258f8",
+      "credentials": {
+        "telegramApi": {
+          "id": "Rgi97VSfXYPghdOs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "32d5c487-d238-40b1-8aac-c878a733b8d3",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "/joke",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -352,
+        80
+      ],
+      "id": "77cb39e8-fdfa-4407-be42-4d1ff9c7b175",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "url": "https://api.chucknorris.io/jokes/random",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -80,
+        -16
+      ],
+      "id": "16beed85-d832-485f-8a81-a085959235be",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "chatId": "5642054503",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        368,
+        192
+      ],
+      "id": "cb3b7be3-4316-4e16-baf0-c2bd40c9ce88",
+      "name": "Send a text message1",
+      "webhookId": "5bf8483e-11c9-4184-a60e-3df320678eb3",
+      "credentials": {
+        "telegramApi": {
+          "id": "Rgi97VSfXYPghdOs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "Ты — AI-ассистент с доступом к трём инструментам:\n\n1. SQL Tool — база из 40 вопросов по SQL (JOIN, SELECT, индексы, транзакции, нормализация и т.д.)\n2. Python Tool — база из 40 вопросов по Python (списки, словари, функции, классы, генераторы и т.д.)\n3. Search with Cache — веб-поиск через SearXNG (новости, погода, другие языки программирования, общие знания)\n\nПРАВИЛА ВЫБОРА ИНСТРУМЕНТА (строго следуй):\n\nШаг 1: Определи тему вопроса.\n- Если вопрос про SQL (JOIN, SELECT, индексы, транзакции, базы данных) → используй SQL Tool\n- Если вопрос про Python (списки, словари, функции, классы, генераторы) → используй Python Tool\n- Если вопрос про ОБА (сравнение SQL и Python) → используй оба Tool\n\nШаг 2: Если ответа в базе нет — ищи в интернете.\n- Если вопрос про новости, погоду, текущие события, Rust, Go, JavaScript или любую тему, которой нет в SQL/Python → используй Search with Cache\n\nШаг 3: Если ни база, ни интернет не дали ответ — честно скажи:\n\"К сожалению, я не нашёл точного ответа. Попробуйте переформулировать вопрос или уточнить тему.\"\n\nВАЖНО:\n- Всегда отвечай на русском языке\n- Будь дружелюбным и полезным\n- Если не уверен — лучше честно сказать «не знаю», чем выдумывать\n- Ссылайся на источник, если ответ пришёл из интернета\n\nОБЯЗАТЕЛЬНОЕ ПРАВИЛО — ЦИТИРОВАНИЕ ИСТОЧНИКА:\n\nВ конце каждого ответа указывай источник информации:\n\n- Если ответ из SQL Tool → добавь: \"📚 Источник: SQL Tool (база из 40 вопросов)\"\n- Если ответ из Python Tool → добавь: \"📚 Источник: Python Tool (база из 40 вопросов)\"\n- Если ответ из Search with Cache → добавь: \"🌐 Источник: [название сайта] ([URL])\"\n- Если использовал несколько источников → перечисли все\n\nПРИМЕР правильного ответа:\n\"JOIN — это операция в SQL, которая объединяет строки из двух таблиц. Виды: INNER, LEFT, RIGHT, FULL, CROSS.\n\n📚 Источник: SQL Tool (база из 40 вопросов)\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -80,
+        208
+      ],
+      "id": "af7e9b26-2ec5-4965-9900-4e4eff415640",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search SQL interview questions. Use this tool when the user asks about SQL, databases, JOINs, transactions, or any SQL-related topic.",
+        "memoryKey": {
+          "__rl": true,
+          "value": "vector_store_key",
+          "mode": "list",
+          "cachedResultName": "vector_store_key"
+        },
+        "topK": 1
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        336,
+        416
+      ],
+      "id": "d6b85aaa-9d9e-4b38-97b2-ce40a538bdd8",
+      "name": "Simple Vector Store1"
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        416,
+        624
+      ],
+      "id": "28977c6a-633f-4bc2-bdbf-6d93c07c9258",
+      "name": "Embeddings Ollama1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "wOOPqi4upnDmGu6Y",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search Python interview questions. Use this tool when the user asks about Python, lists, dictionaries, functions, classes, or any Python-related topic.",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        },
+        "topK": 1
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        64,
+        448
+      ],
+      "id": "d011677f-cb09-4087-93ae-c943cc56a775",
+      "name": "Simple Vector Store2"
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        160,
+        672
+      ],
+      "id": "1380a844-c40d-4c87-a5a0-14bd98eebd26",
+      "name": "Embeddings Ollama2",
+      "credentials": {
+        "ollamaApi": {
+          "id": "wOOPqi4upnDmGu6Y",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.message.chat.id }}",
+        "contextWindowLength": 2
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.4,
+      "position": [
+        -96,
+        384
+      ],
+      "id": "ef0d90e6-8086-41b4-a705-3df6bf5b8acc",
+      "name": "Postgres Chat Memory",
+      "retryOnFail": true,
+      "credentials": {
+        "postgres": {
+          "id": "m6w8b1nAKMVin3tL",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        304
+      ],
+      "id": "e78b6393-932b-479e-9ca2-e21c5655f731",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "5642054503",
+        "text": "=⚠️ Ошибка в workflow: {{ $json.workflow.name }} Узел: {{ $json.execution.lastNodeExecuted }} Ошибка: {{ $json.execution.error.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -816,
+        304
+      ],
+      "id": "5fdec783-7615-4f48-b053-f5caad35b06e",
+      "name": "Send a text message2",
+      "webhookId": "9db91181-0d94-4826-90a1-b51d903b75ba",
+      "credentials": {
+        "telegramApi": {
+          "id": "Rgi97VSfXYPghdOs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Search the web using SearXNG (with Redis cache). Use when the user asks about topics NOT covered in SQL or Python knowledge bases.",
+        "workflowId": {
+          "__rl": true,
+          "value": "Krl3F4YVFymBo3y3",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/Krl3F4YVFymBo3y3",
+          "cachedResultName": "День 16 - Search with Cache"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ $fromAI('query', 'Search query', 'string') }}"
+          },
+          "matchingColumns": [
+            "query"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -48,
+        592
+      ],
+      "id": "3c156974-9729-4bbd-8115-6e33caf86608",
+      "name": "Call 'Search with Cache'"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-cloudflare-ai.cloudflareChatModel",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        336
+      ],
+      "id": "47c1b34d-776b-443c-933a-36ecf5af10ff",
+      "name": "Cloudflare Chat Model",
+      "credentials": {
+        "cloudflareWorkersAiApi": {
+          "id": "EVPmxI6IoxuSR4Oa",
+          "name": "Cloudflare Workers AI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        },
+        "embeddingBatchSize": 100
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        -1760,
+        -320
+      ],
+      "id": "5dfe135b-0f1e-4569-b17c-733f07c99822",
+      "name": "Simple Vector Store"
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        -1808,
+        -80
+      ],
+      "id": "fb931900-6c3e-4f16-bf20-1fa12ab2a18c",
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "wOOPqi4upnDmGu6Y",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "source",
+                "value": "Jason Statham"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -1600,
+        -112
+      ],
+      "id": "1c562f4d-7ab0-4fa5-b050-5b5ea29fe332",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 500,
+        "chunkOverlap": 50,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        -1504,
+        96
+      ],
+      "id": "d57e9d43-5d54-461f-b61b-4b1bc4aa8e83",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/home/node/.n8n-files/statham_quotes.txt",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -1968,
+        -320
+      ],
+      "id": "de21126f-636e-49c9-b0cf-111ce695d1da",
+      "name": "Read/Write Files from Disk1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store2": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Search with Cache'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cloudflare Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3422db33-d3b5-48c3-b513-48d47e6f3b40",
+  "meta": {
+    "instanceId": "d66ae538ff21d02df59cae6a85dcdfefbeb511d5f9c6ecd248aa81cf92f1cfb5"
+  },
+  "id": "36IItqNMDCtddSzV",
+  "tags": []
+}
